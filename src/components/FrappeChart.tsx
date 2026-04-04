@@ -11,6 +11,7 @@ export function FrappeChart({ config }: FrappeChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<unknown>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isRendered, setIsRendered] = useState(false);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -19,7 +20,14 @@ export function FrappeChart({ config }: FrappeChartProps) {
 
     const renderChart = async () => {
       try {
-        const { Chart } = await import("frappe-charts/dist/frappe-charts.min.esm");
+        const frappeModule = await import(
+          "frappe-charts/dist/frappe-charts.min.esm"
+        );
+        const Chart = frappeModule.Chart || frappeModule.default?.Chart;
+
+        if (!Chart) {
+          throw new Error("Could not load Frappe Charts library");
+        }
 
         if (!mounted || !chartRef.current) return;
 
@@ -30,16 +38,17 @@ export function FrappeChart({ config }: FrappeChartProps) {
         const options: Record<string, unknown> = {
           title: config.title || "",
           data: buildChartData(config),
-          type: config.type === "donut" ? "pie" : config.type,
+          type: config.type,
           height: config.height || 280,
-          colors: config.colors || ["#1c1917", "#78716c", "#a8a29e", "#d6d3d1"],
+          colors: config.colors || [
+            "#1c1917",
+            "#78716c",
+            "#a8a29e",
+            "#d6d3d1",
+          ],
           animate: config.animate ?? 1,
           truncateLegends: config.truncateLegends ?? true,
         };
-
-        if (config.type === "donut") {
-          options.type = "donut";
-        }
 
         // Bar options
         if (config.barOptions) {
@@ -71,7 +80,7 @@ export function FrappeChart({ config }: FrappeChartProps) {
           options.valuesOverPoints = config.valuesOverPoints;
         }
 
-        // Max slices for pie/percentage
+        // Max slices for pie/percentage/donut
         if (config.maxSlices) {
           options.maxSlices = config.maxSlices;
         }
@@ -88,18 +97,26 @@ export function FrappeChart({ config }: FrappeChartProps) {
 
         const chart = new Chart(chartRef.current, options);
         chartInstanceRef.current = chart;
+
+        if (mounted) {
+          setIsRendered(true);
+        }
       } catch (err) {
         if (mounted) {
           console.error("Chart render error:", err);
-          setError("Failed to render chart");
+          setError(
+            err instanceof Error ? err.message : "Failed to render chart"
+          );
         }
       }
     };
 
-    renderChart();
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(renderChart, 50);
 
     return () => {
       mounted = false;
+      clearTimeout(timer);
       chartInstanceRef.current = null;
     };
   }, [config]);
@@ -110,12 +127,13 @@ export function FrappeChart({ config }: FrappeChartProps) {
         <p className="text-[10px] uppercase tracking-widest text-black/40 font-medium">
           Chart rendering error
         </p>
+        <p className="text-xs text-black/30 mt-2">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="animate-chart-reveal">
+    <div className={isRendered ? "animate-chart-reveal" : ""}>
       <div className="border border-black/10 rounded-[2px] bg-white p-6 overflow-hidden">
         {config.title && (
           <div className="mb-4 pb-3 border-b border-black/5">
@@ -124,7 +142,7 @@ export function FrappeChart({ config }: FrappeChartProps) {
             </span>
           </div>
         )}
-        <div ref={chartRef} className="w-full" />
+        <div ref={chartRef} className="w-full min-h-[100px]" />
       </div>
     </div>
   );
@@ -139,7 +157,9 @@ function buildChartData(config: ChartConfig): Record<string, unknown> {
       }
     }
 
-    const startDate = config.data.start ? new Date(config.data.start) : new Date();
+    const startDate = config.data.start
+      ? new Date(config.data.start)
+      : new Date();
     const endDate = config.data.end ? new Date(config.data.end) : new Date();
 
     return {

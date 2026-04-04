@@ -10,13 +10,22 @@ interface Message {
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages } = (await req.json()) as { messages: Message[] };
+    const { messages, geolocation } = (await req.json()) as {
+      messages: Message[];
+      geolocation?: Record<string, unknown>;
+    };
+
+    // Build a context-aware system prompt with geolocation data
+    let systemPrompt = SYSTEM_PROMPT;
+    if (geolocation && typeof geolocation === "object") {
+      systemPrompt += `\n\n## Current User Geolocation Context:\nThe following is the real-time geolocation data for the current user. Use this when they ask about their location, IP, or related details:\n\`\`\`json\n${JSON.stringify(geolocation, null, 2)}\n\`\`\``;
+    }
 
     const response = await cerebras.chat.completions.create({
       model: "llama-4-scout-17b-16e-instruct",
-      messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
+      messages: [{ role: "system", content: systemPrompt }, ...messages],
       temperature: 0.7,
-      max_tokens: 4096,
+      max_completion_tokens: 4096,
       stream: true,
     });
 
@@ -35,6 +44,7 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
         } catch (error) {
+          console.error("Stream error:", error);
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({ error: "Stream error" })}\n\n`
@@ -54,8 +64,10 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Chat API error:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to generate response" },
+      { error: `Failed to generate response: ${errorMessage}` },
       { status: 500 }
     );
   }
