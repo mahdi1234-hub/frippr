@@ -160,7 +160,33 @@ export function ChatInterface() {
       const targetMatch = userContent.match(/target[:\s]+["']?(\w+)["']?/i) ||
         userContent.match(/predict[:\s]+["']?(\w+)["']?/i) ||
         userContent.match(/column[:\s]+["']?(\w+)["']?/i);
-      const target = targetMatch?.[1] || null;
+      let target = targetMatch?.[1] || null;
+
+      // If no target detected from text, try to auto-detect from file content
+      if (!target) {
+        try {
+          const text = await file.text();
+          const firstLine = text.split("\n")[0];
+          const columns = firstLine.split(",").map((c) => c.trim().toLowerCase().replace(/"/g, ""));
+          // Common target column names
+          const targetPatterns = ["churn", "target", "label", "class", "outcome", "result",
+            "survived", "default", "fraud", "spam", "diagnosis", "species",
+            "category", "type", "status", "prediction", "y", "is_"];
+          for (const col of columns) {
+            if (targetPatterns.some((p) => col.includes(p))) {
+              // Use original case from CSV
+              const origColumns = firstLine.split(",").map((c) => c.trim().replace(/"/g, ""));
+              const idx = columns.indexOf(col);
+              target = origColumns[idx] || col;
+              break;
+            }
+          }
+          // Reset file for re-reading
+          file = new File([text], file.name, { type: file.type });
+        } catch {
+          // Ignore file read errors
+        }
+      }
 
       const formData = new FormData();
       formData.append("file", file);
