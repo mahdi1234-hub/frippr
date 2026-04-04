@@ -76,6 +76,23 @@ export interface ParsedSegment {
   dashboardConfig?: DashboardConfig;
 }
 
+/**
+ * Sanitize common LLM JSON mistakes:
+ * - Remove % signs from numeric values in arrays: [25%, 20%] -> [25, 20]
+ * - Remove $ signs from numeric values in arrays: [$80, $90] -> [80, 90]
+ * - Fix trailing commas before closing brackets
+ */
+function sanitizeJsonValues(json: string): string {
+  // Remove %, $ from values inside arrays: [ 25%, $80 ] -> [ 25, 80 ]
+  let sanitized = json.replace(/:\s*\[([^\]]*)\]/g, (match, inner) => {
+    const cleaned = inner.replace(/[$%]/g, "").replace(/\s+/g, " ");
+    return ": [" + cleaned + "]";
+  });
+  // Remove trailing commas before ] or }
+  sanitized = sanitized.replace(/,\s*([}\]])/g, "$1");
+  return sanitized;
+}
+
 export function parseChartBlocks(text: string): ParsedSegment[] {
   const segments: ParsedSegment[] = [];
   // Match both ```chart and ```dashboard blocks
@@ -95,17 +112,18 @@ export function parseChartBlocks(text: string): ParsedSegment[] {
     const blockType = match[1] as "chart" | "dashboard";
     const jsonStr = match[2].trim();
 
-    // Parse the JSON
+    // Parse the JSON - sanitize common LLM mistakes first
     try {
+      const sanitized = sanitizeJsonValues(jsonStr);
       if (blockType === "dashboard") {
-        const dashboardConfig = JSON.parse(jsonStr) as DashboardConfig;
+        const dashboardConfig = JSON.parse(sanitized) as DashboardConfig;
         segments.push({
           type: "dashboard",
           content: match[0],
           dashboardConfig,
         });
       } else {
-        const chartConfig = JSON.parse(jsonStr) as ChartConfig;
+        const chartConfig = JSON.parse(sanitized) as ChartConfig;
         segments.push({
           type: "chart",
           content: match[0],

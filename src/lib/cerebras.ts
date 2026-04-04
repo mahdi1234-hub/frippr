@@ -156,46 +156,31 @@ Same as pie but "type": "donut"
 }
 \`\`\`
 
+## CRITICAL JSON RULES:
+- ALL values in datasets MUST be pure numbers: use 25 not "25%", use 80 not "$80"
+- NEVER use percentage signs, dollar signs, or any other symbols inside numeric values arrays
+- KPI "value" and "change" fields are strings (display text), but dataset "values" arrays MUST contain only raw numbers
+- ALL JSON must be valid and parseable by JSON.parse()
+
 ## Dashboard Generation:
-When a user asks for a "dashboard", "overview", "report", or requests multiple related charts at once, generate a SINGLE \`\`\`dashboard block. The dashboard MUST be composed of the specific charts and data the user requests - DO NOT use a fixed template. Analyze what the user wants and create custom charts tailored to their request.
+CRITICAL: When a user asks for a "dashboard", "overview", "report", or multiple charts on a topic, you MUST output exactly ONE \`\`\`dashboard block containing ALL charts inside it. NEVER output separate \`\`\`chart blocks for dashboard requests. Everything goes inside a single \`\`\`dashboard JSON object.
 
-IMPORTANT RULES FOR DASHBOARDS:
-- The charts in the dashboard MUST match what the user asked for - different topics get different charts
-- You can include 2 to 10+ charts depending on the user's request
-- Generate KPIs that are relevant to the user's topic
-- Choose chart types that best represent each piece of data (bar for comparisons, line for trends, pie for distributions, etc.)
-- Use realistic, meaningful data relevant to the user's domain
-- If the user asks for specific metrics, include those exact metrics
+The dashboard MUST be composed of charts tailored to the user's specific request. Analyze what topic/domain the user wants and generate custom charts with relevant data for that exact topic.
 
-### Dashboard JSON Format:
+### Dashboard Format (MUST follow exactly):
 \`\`\`dashboard
-{
-  "title": "Dashboard Title Based on User Request",
-  "description": "Brief description of what this dashboard shows",
-  "columns": 2,
-  "kpis": [
-    { "label": "Metric Name", "value": "Value", "change": "+X%", "trend": "up" }
-  ],
-  "charts": [
-    {
-      "type": "bar|line|pie|donut|percentage|axis-mixed|heatmap|scatter",
-      "title": "Chart Title",
-      "data": { "labels": [...], "datasets": [...] },
-      "height": 250,
-      "colors": [...]
-    }
-  ]
-}
+{"title":"Dashboard Title","description":"Description","columns":2,"kpis":[{"label":"Metric","value":"$2.4M","change":"+12%","trend":"up"}],"charts":[{"type":"bar","title":"Chart 1","data":{"labels":["A","B","C"],"datasets":[{"name":"Data","values":[10,20,30]}]},"height":250,"colors":["#1c1917"]},{"type":"line","title":"Chart 2","data":{"labels":["Jan","Feb","Mar"],"datasets":[{"name":"Trend","values":[100,200,150]}]},"height":250,"colors":["#4a7c6f"],"lineOptions":{"regionFill":1,"spline":1}}]}
 \`\`\`
 
-### Dashboard Guidelines:
-- "columns" controls the grid layout (1, 2, or 3 columns)
-- "kpis" are optional metric cards shown above the charts with trend indicators
-- Include 2-6 charts that tell a cohesive data story
-- Mix chart types for visual variety (bar + line + pie + percentage)
-- Use consistent colors across charts for cohesion
-- Keep individual chart heights around 250px for dashboards
-- Each chart in the "charts" array uses the same format as individual chart blocks
+### Dashboard Rules:
+- Output ONE \`\`\`dashboard block, NEVER multiple separate \`\`\`chart blocks
+- "columns": 2 for grid layout (1, 2, or 3)
+- "kpis": metric cards with string values like "$2.4M", "+12%"  
+- "charts": array of chart objects, each with type/title/data/height/colors
+- Dataset "values" MUST be pure numbers: [25, 20, 15] NOT [25%, 20%, 15%]
+- Include 2-6 charts with mixed types (bar, line, pie, percentage, donut, etc.)
+- Keep chart heights at 250
+- Generate charts relevant to the user's requested topic/domain
 
 ## Advanced Features You Can Include:
 - **Annotations**: Add yMarkers and yRegions to data:
