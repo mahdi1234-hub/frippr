@@ -65,6 +65,80 @@ export function ChatInterface() {
     fetchGeolocation();
   }, []);
 
+  /**
+   * Detect if the user's message contains inline JSON/CSV data.
+   * Returns a File object if data is found, null otherwise.
+   */
+  const detectInlineData = (text: string): { file: File; cleanText: string } | null => {
+    // Try to detect JSON array data (e.g., [{"col1": 1, "col2": 2}, ...])
+    const jsonArrayMatch = text.match(/(\[[\s\S]*\{[\s\S]*\}[\s\S]*\])/);
+    if (jsonArrayMatch) {
+      try {
+        const parsed = JSON.parse(jsonArrayMatch[1]);
+        if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === "object") {
+          // Convert JSON array to CSV
+          const headers = Object.keys(parsed[0]);
+          const rows = parsed.map((row: Record<string, unknown>) =>
+            headers.map((h) => {
+              const val = row[h];
+              return typeof val === "string" && val.includes(",") ? `"${val}"` : String(val ?? "");
+            }).join(",")
+          );
+          const csv = [headers.join(","), ...rows].join("\n");
+          const file = new File([csv], "inline_data.csv", { type: "text/csv" });
+          const cleanText = text.replace(jsonArrayMatch[1], "[DATA DETECTED]").trim();
+          return { file, cleanText: cleanText || "Analyze this dataset" };
+        }
+      } catch {
+        // Not valid JSON
+      }
+    }
+
+    // Try to detect JSON object with data arrays (e.g., {"col1": [1,2,3], "col2": [4,5,6]})
+    const jsonObjMatch = text.match(/(\{[\s\S]*"[^"]+"\s*:\s*\[[\s\S]*\][\s\S]*\})/);
+    if (jsonObjMatch) {
+      try {
+        const parsed = JSON.parse(jsonObjMatch[1]);
+        if (typeof parsed === "object" && !Array.isArray(parsed)) {
+          const keys = Object.keys(parsed);
+          if (keys.length >= 2 && Array.isArray(parsed[keys[0]])) {
+            // Convert columnar JSON to CSV
+            const len = parsed[keys[0]].length;
+            const rows: string[] = [];
+            rows.push(keys.join(","));
+            for (let i = 0; i < len; i++) {
+              rows.push(keys.map((k) => String(parsed[k]?.[i] ?? "")).join(","));
+            }
+            const csv = rows.join("\n");
+            const file = new File([csv], "inline_data.csv", { type: "text/csv" });
+            const cleanText = text.replace(jsonObjMatch[1], "[DATA DETECTED]").trim();
+            return { file, cleanText: cleanText || "Analyze this dataset" };
+          }
+        }
+      } catch {
+        // Not valid JSON
+      }
+    }
+
+    // Try to detect CSV-like data (lines with commas, at least 3 rows)
+    const lines = text.split("\n").filter((l) => l.includes(","));
+    if (lines.length >= 3) {
+      const firstCommas = (lines[0].match(/,/g) || []).length;
+      const isConsistent = lines.every((l) => {
+        const commas = (l.match(/,/g) || []).length;
+        return Math.abs(commas - firstCommas) <= 1;
+      });
+      if (isConsistent && firstCommas >= 1) {
+        const csv = lines.join("\n");
+        const file = new File([csv], "inline_data.csv", { type: "text/csv" });
+        const nonCsvText = text.split("\n").filter((l) => !l.includes(",") || (l.match(/,/g) || []).length < firstCommas).join("\n").trim();
+        return { file, cleanText: nonCsvText || "Analyze this dataset" };
+      }
+    }
+
+    return null;
+  };
+
   const runMLAnalysis = async (file: File, userContent: string) => {
     setIsLoading(true);
     const userMsg: Message = { role: "user", content: userContent };
@@ -133,6 +207,14 @@ export function ChatInterface() {
     // If there's an uploaded file, run ML analysis
     if (uploadedFile) {
       await runMLAnalysis(uploadedFile, content.trim());
+      setInput("");
+      return;
+    }
+
+    // Check for inline JSON/CSV data in the message
+    const inlineData = detectInlineData(content.trim());
+    if (inlineData) {
+      await runMLAnalysis(inlineData.file, inlineData.cleanText);
       setInput("");
       return;
     }
