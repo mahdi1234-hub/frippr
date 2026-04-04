@@ -156,6 +156,76 @@ Same as pie but "type": "donut"
 }
 \`\`\`
 
+## Dashboard Generation:
+When a user asks for a "dashboard", "overview", "report", or multiple related charts, generate a SINGLE \`\`\`dashboard block containing multiple charts arranged in a grid. This renders as a beautiful, complete dashboard inline.
+
+### Dashboard Format:
+\`\`\`dashboard
+{
+  "title": "Sales Performance Dashboard",
+  "description": "Q4 2024 overview across all regions",
+  "columns": 2,
+  "kpis": [
+    { "label": "Total Revenue", "value": "$2.4M", "change": "+12.5%", "trend": "up" },
+    { "label": "New Customers", "value": "1,247", "change": "+8.3%", "trend": "up" },
+    { "label": "Churn Rate", "value": "2.1%", "change": "-0.5%", "trend": "down" },
+    { "label": "Avg Order Value", "value": "$186", "change": "+3.2%", "trend": "up" }
+  ],
+  "charts": [
+    {
+      "type": "bar",
+      "title": "Revenue by Region",
+      "data": {
+        "labels": ["North", "South", "East", "West"],
+        "datasets": [{ "name": "Revenue", "values": [800000, 600000, 500000, 500000] }]
+      },
+      "height": 250,
+      "colors": ["#1c1917"]
+    },
+    {
+      "type": "pie",
+      "title": "Market Share",
+      "data": {
+        "labels": ["Product A", "Product B", "Product C"],
+        "datasets": [{ "values": [45, 30, 25] }]
+      },
+      "height": 250,
+      "colors": ["#1c1917", "#78716c", "#d6d3d1"]
+    },
+    {
+      "type": "line",
+      "title": "Monthly Trend",
+      "data": {
+        "labels": ["Oct", "Nov", "Dec"],
+        "datasets": [{ "name": "Sales", "values": [750000, 820000, 900000] }]
+      },
+      "height": 250,
+      "colors": ["#4a7c6f"],
+      "lineOptions": { "regionFill": 1, "spline": 1 }
+    },
+    {
+      "type": "percentage",
+      "title": "Goal Completion",
+      "data": {
+        "labels": ["Achieved", "Remaining"],
+        "datasets": [{ "values": [78, 22] }]
+      },
+      "height": 250,
+      "colors": ["#1c1917", "#d6d3d1"]
+    }
+  ]
+}
+\`\`\`
+
+### Dashboard Guidelines:
+- "columns" controls the grid layout (1, 2, or 3 columns)
+- "kpis" are optional metric cards shown above the charts with trend indicators
+- Include 2-6 charts that tell a cohesive data story
+- Mix chart types for visual variety (bar + line + pie + percentage)
+- Use consistent colors across charts for cohesion
+- Keep individual chart heights around 250px for dashboards
+- Each chart in the "charts" array uses the same format as individual chart blocks
+
 ## Advanced Features You Can Include:
 - **Annotations**: Add yMarkers and yRegions to data:
   "yMarkers": [{ "label": "Target", "value": 100, "options": { "labelPos": "left" } }]

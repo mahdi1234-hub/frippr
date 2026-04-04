@@ -9,9 +9,9 @@ interface Message {
 }
 
 const SUGGESTIONS = [
+  "Create a complete sales performance dashboard",
   "Show me a bar chart of quarterly revenue for 2024",
-  "Create a pie chart of market share by company",
-  "Visualize monthly website traffic as an area chart",
+  "Build a dashboard with website analytics overview",
   "What is my IP address and location?",
 ];
 

@@ -2,6 +2,7 @@
 
 import { parseChartBlocks, type ParsedSegment } from "@/lib/parseChartBlocks";
 import { FrappeChart } from "./FrappeChart";
+import { Dashboard } from "./Dashboard";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -58,6 +59,8 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
           <div key={index} className="mb-4">
             {segment.type === "text" ? (
               <TextBlock content={segment.content} />
+            ) : segment.type === "dashboard" && segment.dashboardConfig ? (
+              <Dashboard config={segment.dashboardConfig} />
             ) : segment.chartConfig ? (
               <FrappeChart config={segment.chartConfig} />
             ) : null}
