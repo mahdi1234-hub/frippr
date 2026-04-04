@@ -75,19 +75,27 @@ export function ChatInterface() {
     if (jsonArrayMatch) {
       try {
         const parsed = JSON.parse(jsonArrayMatch[1]);
-        if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === "object") {
-          // Convert JSON array to CSV
+        if (Array.isArray(parsed) && parsed.length >= 10 && typeof parsed[0] === "object") {
           const headers = Object.keys(parsed[0]);
-          const rows = parsed.map((row: Record<string, unknown>) =>
-            headers.map((h) => {
-              const val = row[h];
-              return typeof val === "string" && val.includes(",") ? `"${val}"` : String(val ?? "");
-            }).join(",")
-          );
-          const csv = [headers.join(","), ...rows].join("\n");
-          const file = new File([csv], "inline_data.csv", { type: "text/csv" });
-          const cleanText = text.replace(jsonArrayMatch[1], "[DATA DETECTED]").trim();
-          return { file, cleanText: cleanText || "Analyze this dataset" };
+          // Validate: need at least 2 columns, and not all same values
+          if (headers.length >= 2) {
+            // Check if there's at least 1 numeric-like column
+            const hasNumeric = headers.some((h) =>
+              parsed.slice(0, 5).some((row: Record<string, unknown>) => typeof row[h] === "number")
+            );
+            if (hasNumeric || headers.length >= 3) {
+              const rows = parsed.map((row: Record<string, unknown>) =>
+                headers.map((h) => {
+                  const val = row[h];
+                  return typeof val === "string" && val.includes(",") ? `"${val}"` : String(val ?? "");
+                }).join(",")
+              );
+              const csv = [headers.join(","), ...rows].join("\n");
+              const file = new File([csv], "inline_data.csv", { type: "text/csv" });
+              const cleanText = text.replace(jsonArrayMatch[1], "[DATA DETECTED]").trim();
+              return { file, cleanText: cleanText || "Analyze this dataset" };
+            }
+          }
         }
       } catch {
         // Not valid JSON
