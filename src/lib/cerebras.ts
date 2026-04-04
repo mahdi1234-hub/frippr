@@ -157,61 +157,32 @@ Same as pie but "type": "donut"
 \`\`\`
 
 ## Dashboard Generation:
-When a user asks for a "dashboard", "overview", "report", or multiple related charts, generate a SINGLE \`\`\`dashboard block containing multiple charts arranged in a grid. This renders as a beautiful, complete dashboard inline.
+When a user asks for a "dashboard", "overview", "report", or requests multiple related charts at once, generate a SINGLE \`\`\`dashboard block. The dashboard MUST be composed of the specific charts and data the user requests - DO NOT use a fixed template. Analyze what the user wants and create custom charts tailored to their request.
 
-### Dashboard Format:
+IMPORTANT RULES FOR DASHBOARDS:
+- The charts in the dashboard MUST match what the user asked for - different topics get different charts
+- You can include 2 to 10+ charts depending on the user's request
+- Generate KPIs that are relevant to the user's topic
+- Choose chart types that best represent each piece of data (bar for comparisons, line for trends, pie for distributions, etc.)
+- Use realistic, meaningful data relevant to the user's domain
+- If the user asks for specific metrics, include those exact metrics
+
+### Dashboard JSON Format:
 \`\`\`dashboard
 {
-  "title": "Sales Performance Dashboard",
-  "description": "Q4 2024 overview across all regions",
+  "title": "Dashboard Title Based on User Request",
+  "description": "Brief description of what this dashboard shows",
   "columns": 2,
   "kpis": [
-    { "label": "Total Revenue", "value": "$2.4M", "change": "+12.5%", "trend": "up" },
-    { "label": "New Customers", "value": "1,247", "change": "+8.3%", "trend": "up" },
-    { "label": "Churn Rate", "value": "2.1%", "change": "-0.5%", "trend": "down" },
-    { "label": "Avg Order Value", "value": "$186", "change": "+3.2%", "trend": "up" }
+    { "label": "Metric Name", "value": "Value", "change": "+X%", "trend": "up" }
   ],
   "charts": [
     {
-      "type": "bar",
-      "title": "Revenue by Region",
-      "data": {
-        "labels": ["North", "South", "East", "West"],
-        "datasets": [{ "name": "Revenue", "values": [800000, 600000, 500000, 500000] }]
-      },
+      "type": "bar|line|pie|donut|percentage|axis-mixed|heatmap|scatter",
+      "title": "Chart Title",
+      "data": { "labels": [...], "datasets": [...] },
       "height": 250,
-      "colors": ["#1c1917"]
-    },
-    {
-      "type": "pie",
-      "title": "Market Share",
-      "data": {
-        "labels": ["Product A", "Product B", "Product C"],
-        "datasets": [{ "values": [45, 30, 25] }]
-      },
-      "height": 250,
-      "colors": ["#1c1917", "#78716c", "#d6d3d1"]
-    },
-    {
-      "type": "line",
-      "title": "Monthly Trend",
-      "data": {
-        "labels": ["Oct", "Nov", "Dec"],
-        "datasets": [{ "name": "Sales", "values": [750000, 820000, 900000] }]
-      },
-      "height": 250,
-      "colors": ["#4a7c6f"],
-      "lineOptions": { "regionFill": 1, "spline": 1 }
-    },
-    {
-      "type": "percentage",
-      "title": "Goal Completion",
-      "data": {
-        "labels": ["Achieved", "Remaining"],
-        "datasets": [{ "values": [78, 22] }]
-      },
-      "height": 250,
-      "colors": ["#1c1917", "#d6d3d1"]
+      "colors": [...]
     }
   ]
 }
