@@ -3,13 +3,15 @@
 import { parseChartBlocks, type ParsedSegment } from "@/lib/parseChartBlocks";
 import { FrappeChart } from "./FrappeChart";
 import { Dashboard } from "./Dashboard";
+import { MLAnalytics } from "./MLAnalytics";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
+  mlResults?: Record<string, unknown>;
 }
 
-export function ChatMessage({ role, content }: ChatMessageProps) {
+export function ChatMessage({ role, content, mlResults }: ChatMessageProps) {
   const isUser = role === "user";
 
   if (isUser) {
@@ -66,6 +68,11 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
             ) : null}
           </div>
         ))}
+        {mlResults && (
+          <div className="mb-4">
+            <MLAnalytics results={mlResults as Record<string, unknown> & { task_type: string }} />
+          </div>
+        )}
       </div>
     </div>
   );
