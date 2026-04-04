@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 const IPLOCATE_API_KEY = process.env.IPLOCATE_API_KEY;
 

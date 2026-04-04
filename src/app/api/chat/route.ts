@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import cerebras, { SYSTEM_PROMPT } from "@/lib/cerebras";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 interface Message {
   role: "user" | "assistant" | "system";
